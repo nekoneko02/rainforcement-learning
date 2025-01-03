@@ -15,12 +15,7 @@ class CatPlaygroundEnv(gym.Env):
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2,
         # i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Dict(
-            {
-                "cat": spaces.Box(0, self.pixel_size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, self.pixel_size - 1, shape=(2,), dtype=int),
-            }
-        )
+        self.observation_space = spaces.Box(0, self.pixel_size - 1, shape=(4,), dtype=int)
 
         # We have 2 continuous actions, corresponding to moving speed, angle
         self.action_space = spaces.Box(low = np.array([0, 0]), high = np.array([speed_max, math.pi]), shape=(2,), dtype=float)
@@ -29,7 +24,7 @@ class CatPlaygroundEnv(gym.Env):
         self.render_mode = render_mode
 
     def _get_obs(self):
-        return {"cat": self._cat_location, "target": self._target_location}
+        return np.concatenate((self._cat_location, self._target_location))
 
     def _get_info(self):
         return {
@@ -65,7 +60,7 @@ class CatPlaygroundEnv(gym.Env):
             self._cat_location + direction, 0, self.pixel_size - 1
         )
         # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)
+        terminated = np.array_equal(self._cat_location, self._target_location)
         reward = 1 if terminated else 0  # Binary sparse rewards
         observation = self._get_obs()
         info = self._get_info()
