@@ -176,3 +176,5 @@ env/
 *.lock
 *.bak
 *.log
+
+.old
