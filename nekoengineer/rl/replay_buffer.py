@@ -2,6 +2,7 @@ import numpy as np
 from tf_agents.replay_buffers import tf_uniform_replay_buffer
 import tensorflow as tf
 from tensorflow import keras
+import math
 
 class Buffer(tf_uniform_replay_buffer.TFUniformReplayBuffer):
   def __init__(self, num_states, num_actions, buffer_capacity=100000, batch_size=64):
@@ -10,12 +11,24 @@ class Buffer(tf_uniform_replay_buffer.TFUniformReplayBuffer):
       tf.TensorSpec([num_actions], tf.float32, 'action'),
       tf.TensorSpec([1], tf.float32, 'reward'),
       tf.TensorSpec([num_states], tf.float32, 'next_observation'),
+      tf.TensorSpec([1], tf.float32, 'priority_key')
     )
+    self.priority_key = 4
+
     super().__init__(
         data_spec=data_spec,
         batch_size=batch_size,
         max_length=buffer_capacity
     )
+  def get_next(self, sample_batch_size=None, num_steps=None, time_stacked=True):
+    samples, info = super().get_next(sample_batch_size=self.max_length, num_steps=num_steps, time_stacked=time_stacked)
+
+    priority_batch = samples[self.priority_key]
+    probs = tf.nn.softmax(priority_batch)
+    indices = tf.random.categorical(math.log(probs), num_samples=sample_batch_size)
+    samples = samples[indices]
+
+    return samples, info
     """
     # Number of "experiences" to store at max
     self.buffer_capacity = buffer_capacity
